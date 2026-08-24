@@ -1,31 +1,36 @@
 package dev.terrorify.whatsmyclient
 
+import dev.terrorify.whatsmyclient.labymod.LabyModProtocol
 import dev.terrorify.whatsmyclient.lunar.WorldEditCui
 import net.minestom.server.entity.Player
 
 /**
- * Universal client-capability API. Minestom-native today; the provider seam (currently Lunar Client)
- * is meant to extend to Spigot/Fabric backends later.
+ * Universal client-capability API. Minestom-native today; the provider seam
+ * is engineered to extend across Spigot and Fabric backends.
  *
- * Capabilities are exposed as plain calls that route to the player's detected client. The first
- * capability is **selection visuals**, drawn via Lunar's built-in WorldEditCUI (the `worldedit:cui`
- * channel) — no client mod needed for Lunar users. Apollo-based detection + the CUI enable toggle are
- * layered on next; for now WECUI messages are primed on join and sent to everyone (non-WECUI clients
- * ignore them).
+ * Capabilities are exposed as plain calls that route to the player's detected client:
+ * - **Lunar Client**: Selection visuals via WorldEditCUI (`worldedit:cui`) and Apollo hooks.
+ * - **LabyMod**: Native economy displays, server gamemode headers, subtitles, and permissions (`labymod3:main`).
  */
 object WhatsMyClient {
 
-    /** Wire up provider hooks. Call once after the server is initialized, before players join. */
+    /** Wire up provider hooks (Lunar, LabyMod, etc.). Call once on server boot. */
     @JvmStatic
     fun init() {
         WorldEditCui.install()
+        LabyModProtocol.install()
     }
 
-    /** Detected client for a player. (Lunar detection via Apollo is added with the Apollo provider.) */
+    /** Detected client for a player. */
     @JvmStatic
-    fun clientType(@Suppress("UNUSED_PARAMETER") player: Player): ClientType = ClientType.UNKNOWN
+    fun clientType(player: Player): ClientType {
+        return when {
+            LabyModProtocol.isLabyModUser(player) -> ClientType.LABYMOD
+            else -> ClientType.UNKNOWN
+        }
+    }
 
-    // ── Selection visuals ─────────────────────────────────────────────────────────────────────
+    // ── Selection visuals (Lunar Client / WorldEdit CUI) ───────────────────────────────────
 
     /** Show a cuboid selection box defined by two corners. */
     @JvmStatic
@@ -33,9 +38,29 @@ object WhatsMyClient {
         WorldEditCui.showCuboid(player, x1, y1, z1, x2, y2, z2)
     }
 
-    /** Hide any selection box. */
+    /** Hide any active selection box. */
     @JvmStatic
     fun clearSelection(player: Player) {
         WorldEditCui.clear(player)
+    }
+
+    // ── LabyMod Integrations ───────────────────────────────────────────────────────────────
+
+    /** Update or display balance in LabyMod's native Economy HUD. */
+    @JvmStatic
+    fun sendLabyEconomy(player: Player, balance: Double, visible: Boolean = true, decimal: Boolean = false) {
+        LabyModProtocol.sendEconomyDisplay(player, balance, visible, decimal)
+    }
+
+    /** Set the gamemode or state displayed under server title in LabyMod. */
+    @JvmStatic
+    fun setLabyGamemode(player: Player, gamemodeName: String) {
+        LabyModProtocol.setServerGamemode(player, gamemodeName)
+    }
+
+    /** Set a floating subtitle above a target player's head for LabyMod users. */
+    @JvmStatic
+    fun setLabySubtitle(player: Player, targetUuid: String, subtitleText: String) {
+        LabyModProtocol.setSubtitle(player, targetUuid, subtitleText)
     }
 }

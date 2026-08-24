@@ -1,13 +1,19 @@
 package dev.terrorify.whatsmyclient
 
 /**
- * The client a player is connected with, as detected by whatsmyclient's providers. Drives which
- * client-specific capabilities are available (e.g. Lunar's WorldEditCUI selection rendering).
+ * Recognizable Minecraft client distributions.
  */
 enum class ClientType {
-    /** Unknown / vanilla — only universal capabilities apply. */
     UNKNOWN,
+    VANILLA,
+    LUNAR_CLIENT,
+    LABYMOD,
+    BADLION,
+    FEATHER,
+    FABRIC,
+    FORGE,
+    GEYSER;
 
-    /** Lunar Client (detected via Apollo). */
-    LUNAR,
+    val isCustomClient: Boolean
+        get() = this != UNKNOWN && this != VANILLA
 }
