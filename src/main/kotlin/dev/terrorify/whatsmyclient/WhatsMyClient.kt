@@ -1,30 +1,38 @@
 package dev.terrorify.whatsmyclient
 
+import dev.terrorify.whatsmyclient.alpine.AlpineProtocol
 import dev.terrorify.whatsmyclient.badlion.BadlionProtocol
 import dev.terrorify.whatsmyclient.feather.FeatherProtocol
+import dev.terrorify.whatsmyclient.features.ClientFeature
+import dev.terrorify.whatsmyclient.features.GlobalModEnforcer
 import dev.terrorify.whatsmyclient.labymod.LabyModProtocol
 import dev.terrorify.whatsmyclient.lunar.WorldEditCui
+import dev.terrorify.whatsmyclient.norisk.NoRiskProtocol
 import net.minestom.server.entity.Player
 
 /**
  * Universal client-capability API. Minestom-native today; the provider seam
  * is engineered to extend across Spigot and Fabric backends.
  *
- * Capabilities are exposed as plain calls that route to the player's detected client:
+ * Supported Clients & Ecosystems:
  * - **Lunar Client**: Selection visuals via WorldEditCUI (`worldedit:cui`) and Apollo hooks.
  * - **Badlion Client**: Mod disallow enforcement, custom HUD timers, and waypoints (`badlion:mods`).
  * - **Feather Client**: Mod enforcement, custom Discord RPC, and client detection (`feather:client`).
  * - **LabyMod**: Native economy displays, server gamemode headers, subtitles, and permissions (`labymod3:main`).
+ * - **Alpine Client (Ridge)**: Mod enforcement, notifications, and HUD cooldowns (`ac:play`).
+ * - **NoRisk Client**: Mod enforcement and server notifications (`nrc:play`).
  */
 object WhatsMyClient {
 
-    /** Wire up provider hooks (Lunar, Badlion, Feather, LabyMod, etc.). Call once on server boot. */
+    /** Wire up all client provider hooks. Call once on server boot. */
     @JvmStatic
     fun init() {
         WorldEditCui.install()
         LabyModProtocol.install()
         BadlionProtocol.install()
         FeatherProtocol.install()
+        AlpineProtocol.install()
+        NoRiskProtocol.install()
     }
 
     /** Detected client for a player. */
@@ -34,8 +42,30 @@ object WhatsMyClient {
             LabyModProtocol.isLabyModUser(player) -> ClientType.LABYMOD
             BadlionProtocol.isBadlionUser(player) -> ClientType.BADLION
             FeatherProtocol.isFeatherUser(player) -> ClientType.FEATHER
+            AlpineProtocol.isAlpineUser(player) -> ClientType.ALPINE
+            NoRiskProtocol.isNoRiskUser(player) -> ClientType.NORISK
             else -> ClientType.UNKNOWN
         }
+    }
+
+    // ── Universal Global Mod Enforcement ───────────────────────────────────────────────────
+
+    /** Disallow one or more universal features globally across all supported client APIs. */
+    @JvmStatic
+    fun disableFeatures(vararg features: ClientFeature) {
+        GlobalModEnforcer.disable(*features)
+    }
+
+    /** Re-enable universal features globally. */
+    @JvmStatic
+    fun enableFeatures(vararg features: ClientFeature) {
+        GlobalModEnforcer.enable(*features)
+    }
+
+    /** Enforce all registered global rules onto the player's client. */
+    @JvmStatic
+    fun enforceRules(player: Player) {
+        GlobalModEnforcer.enforce(player)
     }
 
     // ── Selection visuals (Lunar Client / WorldEdit CUI) ───────────────────────────────────
@@ -104,5 +134,21 @@ object WhatsMyClient {
     @JvmStatic
     fun setFeatherDiscordRpc(player: Player, state: String, details: String) {
         FeatherProtocol.setDiscordRpc(player, state, details)
+    }
+
+    // ── Alpine Client (Ridge) Integrations ──────────────────────────────────────────────────
+
+    /** Send an in-game notification popup to Alpine users. */
+    @JvmStatic
+    fun sendAlpineNotification(player: Player, title: String, message: String, durationMs: Int = 3000) {
+        AlpineProtocol.sendNotification(player, title, message, durationMs)
+    }
+
+    // ── NoRisk Client Integrations ─────────────────────────────────────────────────────────
+
+    /** Send an in-game notification popup to NoRisk users. */
+    @JvmStatic
+    fun sendNoRiskNotification(player: Player, title: String, message: String) {
+        NoRiskProtocol.sendNotification(player, title, message)
     }
 }

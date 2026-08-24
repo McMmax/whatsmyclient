@@ -2,7 +2,7 @@
 
 # 🔍 WhatsMyClient
 
-### High-Performance Client Brand Identification & Feature Integration SDK
+### High-Performance Universal Client Identification & Cross-Client Mod Enforcer SDK
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Java 21](https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
@@ -10,11 +10,14 @@
 [![Lunar Client](https://img.shields.io/badge/Lunar_Client-Apollo_Hooks-00E5FF?style=for-the-badge&logo=starship&logoColor=black)](https://lunarclient.com/)
 [![Badlion Client](https://img.shields.io/badge/Badlion_Client-ModAPI-FFA000?style=for-the-badge&logo=lion&logoColor=white)](https://github.com/BadlionClient/BadlionClientModAPI)
 [![Feather Client](https://img.shields.io/badge/Feather_Client-Server_API-AA00FF?style=for-the-badge&logo=feather&logoColor=white)](https://docs.feathermc.com/)
+[![Alpine Client](https://img.shields.io/badge/Alpine_Client-Ridge_API-00B0FF?style=for-the-badge&logo=alpinelinux&logoColor=white)](https://github.com/alpine-client/ridge)
+[![NoRisk Client](https://img.shields.io/badge/NoRisk_Client-Server_API-E040FB?style=for-the-badge&logo=shield&logoColor=white)](https://docs.norisk.gg/)
 [![LabyMod](https://img.shields.io/badge/LabyMod-Server_API-1E88E5?style=for-the-badge&logo=wolfpack&logoColor=white)](https://dev.labymod.net/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <b>WhatsMyClient</b> is a lightweight, zero-allocation Kotlin / Java library designed to identify Minecraft client software during handshake and broadcast rich visual capabilities (Lunar Client WorldEdit CUI, Badlion ModAPI, Feather Server API, and LabyMod economy HUDs) with zero client mods required.
+  <b>WhatsMyClient</b> is a lightweight, zero-allocation Kotlin / Java library designed to identify Minecraft client software during handshake and broadcast rich visual capabilities with zero client mods required.<br/>
+  Features a <b>Universal Cross-Client Mod Enforcer</b> that automatically maps global feature rules across Lunar, Badlion, Feather, Alpine, NoRisk, and LabyMod.
 </p>
 
 </div>
@@ -23,11 +26,13 @@
 
 ## 🎯 Key Capabilities
 
-* **🔍 Accurate Brand Identification**: Intercepts plugin messaging channels (`minecraft:brand`, `lunarclient:pm`, `badlion:mods`, `feather:client`, `labymod3:main`, `fml:handshake`, etc.) during login to accurately identify Vanilla, Lunar Client, Badlion Client, Feather Client, LabyMod, Fabric, Forge, and Geyser (Bedrock) clients.
-* **📐 Native Selection Visuals (WorldEdit CUI)**: Wireframe selection bounding boxes sent directly over `worldedit:cui` plugin messaging channels, rendered natively for Lunar Client and CUI-enabled users without requiring any client-side mod installations.
-* **🦁 Badlion Client ModAPI Bridge**: Enforce server-side rules by disabling unfair client mods (Minimap, Schematica, Waypoints), broadcast server-managed waypoints, and render HUD countdown timers.
+* **🌐 Universal Global Mod Enforcer**: Declare a single list of disallowed client features (`MINIMAP`, `FREELOOK`, `WAYPOINTS`, `SCHEMATICA`, `FULLBRIGHT`, etc.). WhatsMyClient automatically maps and transmits the proprietary payload for whichever client the player is using.
+* **🔍 Accurate Brand Identification**: Intercepts plugin messaging channels (`minecraft:brand`, `lunarclient:pm`, `badlion:mods`, `feather:client`, `ac:play`, `norisk:client`, `labymod3:main`) during login to accurately identify all major clients.
+* **📐 Native Selection Visuals (WorldEdit CUI)**: Wireframe selection bounding boxes sent directly over `worldedit:cui` plugin messaging channels, rendered natively for Lunar Client and CUI-enabled users without requiring client-side mod installations.
+* **🦁 Badlion Client ModAPI Bridge**: Enforce server-side rules by disabling unfair client mods, broadcast server-managed waypoints, and render HUD countdown timers.
 * **🪶 Feather Client Server API**: Disallow unpermitted mods and manage dynamic Discord Rich Presence (RPC) profiles directly from the server.
-* **🐺 LabyMod 3 & 4 Server Protocol Bridge**: Direct integration with LabyMod features including native Economy HUDs, server gamemode badges, floating player subtitles, markers, and feature permission controls.
+* **🏔️ Alpine Client (Ridge) & 🛡️ NoRisk Client**: Full protocol support for in-game notifications, custom HUD cooldowns, and mod enforcement.
+* **🐺 LabyMod 3 & 4 Server Protocol Bridge**: Direct integration with LabyMod features including native Economy HUDs, server gamemode badges, floating player subtitles, and permissions.
 * **⚡ High-Throughput & Zero Overhead**: Non-blocking packet interception designed for high-frequency server engines (Minestom, Fabric, Paper).
 
 ---
@@ -53,18 +58,34 @@ dependencies {
 ### 1. Initialize on Server Startup
 ```kotlin
 import dev.terrorify.whatsmyclient.WhatsMyClient
+import dev.terrorify.whatsmyclient.features.ClientFeature
 
 fun main() {
     val server = MinecraftServer.init()
     
-    // Initialize WhatsMyClient channels and listeners
+    // 1. Initialize WhatsMyClient channels and listeners
     WhatsMyClient.init()
+    
+    // 2. Configure Global Mod Rules (Applies to ALL clients automatically)
+    WhatsMyClient.disableFeatures(
+        ClientFeature.MINIMAP,
+        ClientFeature.FREELOOK,
+        ClientFeature.WAYPOINTS,
+        ClientFeature.SCHEMATICA,
+        ClientFeature.FULLBRIGHT
+    )
     
     server.start("0.0.0.0", 25565)
 }
 ```
 
-### 2. Lunar Client Selection Visuals
+### 2. Auto-Enforce Rules on Player Join
+```kotlin
+// Automatically translates and sends the correct payload for Badlion, Feather, Alpine, NoRisk, or LabyMod
+WhatsMyClient.enforceRules(player)
+```
+
+### 3. Lunar Client Selection Visuals
 ```kotlin
 // Show a 3D bounding box to a player (rendered natively in Lunar Client CUI)
 WhatsMyClient.showSelection(player, minX, minY, minZ, maxX, maxY, maxZ)
@@ -73,31 +94,16 @@ WhatsMyClient.showSelection(player, minX, minY, minZ, maxX, maxY, maxZ)
 WhatsMyClient.clearSelection(player)
 ```
 
-### 3. Badlion Client Mod Disallow & Waypoints
+### 4. Client-Specific Direct Feature Calls
 ```kotlin
-// Disable unfair client mods for competitive arenas
-WhatsMyClient.setBadlionDisallowedMods(player, mapOf("MiniMap" to true, "Waypoints" to true))
-
-// Broadcast a server waypoint
-WhatsMyClient.createBadlionWaypoint(player, name = "Boss Arena", x = 150, y = 64, z = -200)
-```
-
-### 4. Feather Client Mod Disallow & Discord RPC
-```kotlin
-// Disable FreeLook / Fullbright on Feather Client
-WhatsMyClient.setFeatherDisallowedMods(player, mapOf("FreeLook" to true))
-
-// Set custom Discord status
-WhatsMyClient.setFeatherDiscordRpc(player, state = "In Ranked Queue", details = "Playing 1v1 Nodebuff")
-```
-
-### 5. LabyMod Economy HUD & Server Displays
-```kotlin
-// Update the player's balance in LabyMod's native Economy HUD
+// LabyMod Economy HUD
 WhatsMyClient.sendLabyEconomy(player, balance = 12500.50, visible = true, decimal = true)
 
-// Set the active gamemode indicator under the server header
-WhatsMyClient.setLabyGamemode(player, "Competitive Ranked 1v1")
+// Badlion Waypoints & Timers
+WhatsMyClient.createBadlionWaypoint(player, name = "Boss Arena", x = 150, y = 64, z = -200)
+
+// Alpine / NoRisk Notifications
+WhatsMyClient.sendAlpineNotification(player, title = "Match Starting", message = "Ranked 1v1 starting in 5 seconds!")
 ```
 
 ---

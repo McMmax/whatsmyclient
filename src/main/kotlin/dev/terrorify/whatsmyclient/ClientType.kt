@@ -7,9 +7,11 @@ enum class ClientType {
     UNKNOWN,
     VANILLA,
     LUNAR_CLIENT,
-    LABYMOD,
     BADLION,
     FEATHER,
+    LABYMOD,
+    ALPINE,
+    NORISK,
     FABRIC,
     FORGE,
     GEYSER;
