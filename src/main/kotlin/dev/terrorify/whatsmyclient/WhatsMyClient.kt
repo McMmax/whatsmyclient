@@ -1,5 +1,6 @@
 package dev.terrorify.whatsmyclient
 
+import dev.terrorify.whatsmyclient.badlion.BadlionProtocol
 import dev.terrorify.whatsmyclient.labymod.LabyModProtocol
 import dev.terrorify.whatsmyclient.lunar.WorldEditCui
 import net.minestom.server.entity.Player
@@ -11,14 +12,16 @@ import net.minestom.server.entity.Player
  * Capabilities are exposed as plain calls that route to the player's detected client:
  * - **Lunar Client**: Selection visuals via WorldEditCUI (`worldedit:cui`) and Apollo hooks.
  * - **LabyMod**: Native economy displays, server gamemode headers, subtitles, and permissions (`labymod3:main`).
+ * - **Badlion Client**: Mod disallow enforcement, custom HUD timers, and waypoints (`badlion:mods`).
  */
 object WhatsMyClient {
 
-    /** Wire up provider hooks (Lunar, LabyMod, etc.). Call once on server boot. */
+    /** Wire up provider hooks (Lunar, LabyMod, Badlion, etc.). Call once on server boot. */
     @JvmStatic
     fun init() {
         WorldEditCui.install()
         LabyModProtocol.install()
+        BadlionProtocol.install()
     }
 
     /** Detected client for a player. */
@@ -26,6 +29,7 @@ object WhatsMyClient {
     fun clientType(player: Player): ClientType {
         return when {
             LabyModProtocol.isLabyModUser(player) -> ClientType.LABYMOD
+            BadlionProtocol.isBadlionUser(player) -> ClientType.BADLION
             else -> ClientType.UNKNOWN
         }
     }
@@ -62,5 +66,25 @@ object WhatsMyClient {
     @JvmStatic
     fun setLabySubtitle(player: Player, targetUuid: String, subtitleText: String) {
         LabyModProtocol.setSubtitle(player, targetUuid, subtitleText)
+    }
+
+    // ── Badlion Client Integrations ─────────────────────────────────────────────────────────
+
+    /** Disable specific client mods for Badlion users (e.g., Minimap, Schematica, Waypoints). */
+    @JvmStatic
+    fun setBadlionDisallowedMods(player: Player, mods: Map<String, Boolean>) {
+        BadlionProtocol.setDisallowedMods(player, mods)
+    }
+
+    /** Render a server-managed waypoint on Badlion Client. */
+    @JvmStatic
+    fun createBadlionWaypoint(player: Player, name: String, x: Int, y: Int, z: Int, r: Int = 255, g: Int = 255, b: Int = 255) {
+        BadlionProtocol.createWaypoint(player, name, x, y, z, r, g, b)
+    }
+
+    /** Render a visual HUD countdown timer on Badlion Client. */
+    @JvmStatic
+    fun createBadlionTimer(player: Player, title: String, seconds: Int) {
+        BadlionProtocol.createTimer(player, title, seconds)
     }
 }
