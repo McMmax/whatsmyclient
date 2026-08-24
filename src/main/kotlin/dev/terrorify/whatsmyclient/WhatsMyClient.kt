@@ -1,6 +1,7 @@
 package dev.terrorify.whatsmyclient
 
 import dev.terrorify.whatsmyclient.badlion.BadlionProtocol
+import dev.terrorify.whatsmyclient.feather.FeatherProtocol
 import dev.terrorify.whatsmyclient.labymod.LabyModProtocol
 import dev.terrorify.whatsmyclient.lunar.WorldEditCui
 import net.minestom.server.entity.Player
@@ -11,17 +12,19 @@ import net.minestom.server.entity.Player
  *
  * Capabilities are exposed as plain calls that route to the player's detected client:
  * - **Lunar Client**: Selection visuals via WorldEditCUI (`worldedit:cui`) and Apollo hooks.
- * - **LabyMod**: Native economy displays, server gamemode headers, subtitles, and permissions (`labymod3:main`).
  * - **Badlion Client**: Mod disallow enforcement, custom HUD timers, and waypoints (`badlion:mods`).
+ * - **Feather Client**: Mod enforcement, custom Discord RPC, and client detection (`feather:client`).
+ * - **LabyMod**: Native economy displays, server gamemode headers, subtitles, and permissions (`labymod3:main`).
  */
 object WhatsMyClient {
 
-    /** Wire up provider hooks (Lunar, LabyMod, Badlion, etc.). Call once on server boot. */
+    /** Wire up provider hooks (Lunar, Badlion, Feather, LabyMod, etc.). Call once on server boot. */
     @JvmStatic
     fun init() {
         WorldEditCui.install()
         LabyModProtocol.install()
         BadlionProtocol.install()
+        FeatherProtocol.install()
     }
 
     /** Detected client for a player. */
@@ -30,6 +33,7 @@ object WhatsMyClient {
         return when {
             LabyModProtocol.isLabyModUser(player) -> ClientType.LABYMOD
             BadlionProtocol.isBadlionUser(player) -> ClientType.BADLION
+            FeatherProtocol.isFeatherUser(player) -> ClientType.FEATHER
             else -> ClientType.UNKNOWN
         }
     }
@@ -86,5 +90,19 @@ object WhatsMyClient {
     @JvmStatic
     fun createBadlionTimer(player: Player, title: String, seconds: Int) {
         BadlionProtocol.createTimer(player, title, seconds)
+    }
+
+    // ── Feather Client Integrations ─────────────────────────────────────────────────────────
+
+    /** Disable specific client mods for Feather users (e.g., FreeLook, Fullbright, Waypoints). */
+    @JvmStatic
+    fun setFeatherDisallowedMods(player: Player, mods: Map<String, Boolean>) {
+        FeatherProtocol.setDisallowedMods(player, mods)
+    }
+
+    /** Update player's Discord Rich Presence on Feather Client. */
+    @JvmStatic
+    fun setFeatherDiscordRpc(player: Player, state: String, details: String) {
+        FeatherProtocol.setDiscordRpc(player, state, details)
     }
 }
